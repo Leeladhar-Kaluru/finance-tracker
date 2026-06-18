@@ -111,4 +111,45 @@ const updateTransaction = async (req,res)=>{
     }
 }
 
-module.exports = {createTransaction, getTransactions, getTransactionById, deleteTransaction, updateTransaction};
+const getTransactionSummary = async (req,res)=>{
+    try{
+        const income = await Transaction.aggregate([
+            {$match: {transactionType: "income"}},
+            {$group: {_id: null, total: {$sum: "$amount"}}}
+        ]);
+
+        const expense = await Transaction.aggregate([
+            {$match: {transactionType: "expense"}},
+            {$group: {_id: null, total: {$sum: "$amount"}}}
+        ]);
+        
+        const recentTransactions = await Transaction.find().sort({date: -1}).limit(5);
+
+        const totalIncome = income.length>0 ? income[0].total :0;
+        const totalExpense = expense.length>0 ? expense[0].total : 0;
+        const balance = totalIncome - totalExpense;
+
+        res.status(201).json({
+            success:true,
+            data:{
+                totalIncome,
+                totalExpense,
+                balance,
+                recentTransactions
+            }
+        }); 
+    }
+
+    catch(err){
+        res.status(500).json({
+            success:false,
+            message:err.message
+        });
+    }
+
+}
+
+
+
+module.exports = {createTransaction, getTransactions, getTransactionById, deleteTransaction, updateTransaction, 
+getTransactionSummary };
