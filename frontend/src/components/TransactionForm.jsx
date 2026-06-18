@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createTransaction } from "../services/transactionService";
 
-function TransactionForm(){
+function TransactionForm({ fetchTransactions }){
     const [formData, setFormData] = useState({
         amount: '',
         transactionType: 'income',
@@ -21,7 +21,9 @@ function TransactionForm(){
         e.preventDefault();
         try{
             const data = await createTransaction(formData);
-            console.log("Transaction created:", data);
+
+            await fetchTransactions();
+            
             setFormData({
                 amount: '',
                 transactionType: 'income',
@@ -38,7 +40,7 @@ function TransactionForm(){
     return(
         <div>
             <h2>Add Transaction</h2>
-            <form onSubmit = {handleSubmit}>
+            <form className="transaction-form" onSubmit = {handleSubmit}>
                 <input type="number" name="amount" placeholder="Amount" value={formData.amount}
                 onChange={(event)=> handleChange(event)} />
 
@@ -59,8 +61,6 @@ function TransactionForm(){
 
                 <button type="submit">Add Transaction</button>
             </form>
-
-            <p>{JSON.stringify(formData)}</p>
         </div>
     );
 }
