@@ -149,7 +149,27 @@ const getTransactionSummary = async (req,res)=>{
 
 }
 
+const getCategoryExpense = async (req,res)=>{
+    try{
+        const categoryExpense = await Transaction.aggregate([
+            {$match: {transactionType: "expense"}},
+            {$group: {_id: "$category", total: {$sum: "$amount"}}},
+            {$sort: {total: -1}}
+        ])
+        res.status(201).json({
+            success:true,
+            data:categoryExpense
+        })
+    }
+    catch(err){
+        res.status(500).json({
+            success:false,
+            message:err.message
+        });
+    }
+}
+
 
 
 module.exports = {createTransaction, getTransactions, getTransactionById, deleteTransaction, updateTransaction, 
-getTransactionSummary };
+getTransactionSummary, getCategoryExpense};
