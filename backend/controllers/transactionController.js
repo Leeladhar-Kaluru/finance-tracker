@@ -154,7 +154,8 @@ const getCategoryExpense = async (req,res)=>{
         const categoryExpense = await Transaction.aggregate([
             {$match: {transactionType: "expense"}},
             {$group: {_id: "$category", total: {$sum: "$amount"}}},
-            {$sort: {total: -1}}
+            {$sort: {total: -1}},
+            {$project: {_id:0, category: "$id", total: 1}}
         ])
         res.status(201).json({
             success:true,
@@ -169,7 +170,38 @@ const getCategoryExpense = async (req,res)=>{
     }
 }
 
+const getMonthlyTransaction = async (req, res)=>{
+    try{
+        const monthlyTransaction = await Transaction.aggregate([
+            {$group: {
+                _id: {month: {$month: "$date"}},
+                income: {$sum: {$cond: [{$eq: ["$transactionType", "income"]}, "$amount", 0]}},
+                expense: {$sum: {$cond: [{$eq: ["$transactionType", "expense"]}, "$amount", 0]}}
+            }},
+            {
+            $project: {
+                _id: 0,
+                month: "$_id.month",
+                income:1,
+                expense:1
+            }
+        },
+            {$sort: {month: 1}}
+        ]);
+        res.status(201).json({
+            success:true,
+            data:monthlyTransaction
+        });
+    }
+    catch(err){
+        res.status(500).json({
+            success:false,
+            message:err.message
+        });
+    }
+};
+
 
 
 module.exports = {createTransaction, getTransactions, getTransactionById, deleteTransaction, updateTransaction, 
-getTransactionSummary, getCategoryExpense};
+getTransactionSummary, getCategoryExpense, getMonthlyTransaction};
