@@ -1,12 +1,13 @@
 const Transaction = require("../models/Transaction");
 
+const isValidObjectId = (id) => Transaction.db.base.Types.ObjectId.isValid(id);
+
 const createTransaction = async (req,res)=>{
     try{
-        // const {amount, transactionType, category, description, date} = req.body;
-
         const transaction = await Transaction.create(req.body);
         res.status(201).json({
             success:true,
+            message: "Transaction created successfully",
             data:transaction
         });
     }
@@ -20,8 +21,8 @@ const createTransaction = async (req,res)=>{
 
 const getTransactions = async (req,res)=>{
     try{
-        const transactions = await Transaction.find();
-        res.status(201).json({
+        const transactions = await Transaction.find().sort({ date: -1, createdAt: -1 });
+        res.status(200).json({
             success:true,
             data:transactions
         });
@@ -37,6 +38,12 @@ const getTransactions = async (req,res)=>{
 const getTransactionById = async (req,res)=>{
     try{
         const {id} = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                success:false,
+                message:"Invalid transaction id"
+            });
+        }
         const transaction = await Transaction.findById(id);
         if(!transaction){
             return res.status(404).json({
@@ -44,12 +51,10 @@ const getTransactionById = async (req,res)=>{
                 message:"Transaction not found"
             });
         }
-        else{
-            res.status(201).json({
-                success:true,
-                data:transaction
-            });
-        }
+        res.status(200).json({
+            success:true,
+            data:transaction
+        });
     }
     catch(err){
         res.status(500).json({
@@ -62,18 +67,23 @@ const getTransactionById = async (req,res)=>{
 const deleteTransaction = async (req,res)=>{
     try{
         const {id} = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                success:false,
+                message:"Invalid transaction id"
+            });
+        }
         const transaction = await Transaction.findByIdAndDelete(id);
         if(!transaction){
             return res.status(404).json({
-                success:false
+                success:false,
+                message:"Transaction not found"
             })
         }
-        else{
-            res.status(201).json({
-                success:true,
-                message:"Transaction deleted successfully"
-            });
-        }
+        res.status(200).json({
+            success:true,
+            message:"Transaction deleted successfully"
+        });
     }
     catch(err){
         res.status(500).json({
@@ -86,6 +96,12 @@ const deleteTransaction = async (req,res)=>{
 const updateTransaction = async (req,res)=>{
     try{
         const {id} = req.params;
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({
+                success:false,
+                message:"Invalid transaction id"
+            });
+        }
         const transaction = await Transaction.findByIdAndUpdate(id, req.body, {
             new:true,
             runValidators:true});
@@ -95,13 +111,11 @@ const updateTransaction = async (req,res)=>{
                 message:"Transaction not found"
             });
         }
-        else{
-            res.status(201).json({
-                success:true,
-                data:transaction,
-                message:"Transaction updated successfully"
-            });
-        }
+        res.status(200).json({
+            success:true,
+            data:transaction,
+            message:"Transaction updated successfully"
+        });
     }
     catch(err){
         res.status(500).json({
@@ -129,12 +143,13 @@ const getTransactionSummary = async (req,res)=>{
         const totalExpense = expense.length>0 ? expense[0].total : 0;
         const balance = totalIncome - totalExpense;
 
-        res.status(201).json({
+        res.status(200).json({
             success:true,
             data:{
                 totalIncome,
                 totalExpense,
                 balance,
+                transactionCount: recentTransactions.length,
                 recentTransactions
             }
         }); 
@@ -155,9 +170,9 @@ const getCategoryExpense = async (req,res)=>{
             {$match: {transactionType: "expense"}},
             {$group: {_id: "$category", total: {$sum: "$amount"}}},
             {$sort: {total: -1}},
-            {$project: {_id:0, category: "$id", total: 1}}
+            {$project: {_id:0, category: "$_id", total: 1}}
         ])
-        res.status(201).json({
+        res.status(200).json({
             success:true,
             data:categoryExpense
         })
@@ -174,13 +189,17 @@ const getMonthlyTransaction = async (req, res)=>{
     try{
         const monthlyTransaction = await Transaction.aggregate([
             {$group: {
-                _id: {month: {$month: "$date"}},
+                _id: {
+                    year: {$year: "$date"},
+                    month: {$month: "$date"}
+                },
                 income: {$sum: {$cond: [{$eq: ["$transactionType", "income"]}, "$amount", 0]}},
                 expense: {$sum: {$cond: [{$eq: ["$transactionType", "expense"]}, "$amount", 0]}}
             }},
             {
             $project: {
                 _id: 0,
+                year: "$_id.year",
                 month: "$_id.month",
                 income:1,
                 expense:1
@@ -188,7 +207,7 @@ const getMonthlyTransaction = async (req, res)=>{
         },
             {$sort: {month: 1}}
         ]);
-        res.status(201).json({
+        res.status(200).json({
             success:true,
             data:monthlyTransaction
         });

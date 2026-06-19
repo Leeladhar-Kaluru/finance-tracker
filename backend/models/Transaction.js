@@ -17,12 +17,15 @@ const transactionSchema = new mongoose.Schema({
     },
     description:{
         type: String,
-        required: [true, "Please add a transaction description"]
+        required: [true, "Please add a transaction description"],
+        trim: true
     },
     date:{
         type: Date,
-        Default: Date.now
+        default: Date.now
     }
+}, {
+    timestamps: true
 });
 
 const Transaction = mongoose.model("Transaction", transactionSchema);

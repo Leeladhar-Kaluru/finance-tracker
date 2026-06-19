@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { createTransaction } from "../services/transactionService";
 
-function TransactionForm({ fetchTransactions }){
-    const [formData, setFormData] = useState({
-        amount: '',
-        transactionType: 'income',
-        category: '',
-        description: '',
-        date: ''
-    });
+function TransactionForm({ editingTransaction, onSubmit, onCancelEdit, isSubmitting }){
+    const [formData, setFormData] = useState(() => ({
+        amount: editingTransaction?.amount ?? "",
+        transactionType: editingTransaction?.transactionType ?? "income",
+        category: editingTransaction?.category ?? "",
+        description: editingTransaction?.description ?? "",
+        date: editingTransaction?.date ? editingTransaction.date.slice(0, 10) : "",
+    }));
 
     const handleChange = (event) => {
         setFormData({
@@ -19,49 +18,95 @@ function TransactionForm({ fetchTransactions }){
 
     const handleSubmit = async (e)=>{
         e.preventDefault();
-        try{
-            const data = await createTransaction(formData);
-
-            await fetchTransactions();
-            
-            setFormData({
-                amount: '',
-                transactionType: 'income',
-                category: '',
-                description: '',
-                date: ''
-            })
-        }
-        catch(err){
-            console.log("Error creating transaction:", err);
-        };
+        await onSubmit(formData);
     }
 
     return(
-        <div>
-            <h2>Add Transaction</h2>
+        <section className="panel form-panel fade-in-up">
+            <div className="panel__header">
+                <div>
+                    <p className="eyebrow">Transaction editor</p>
+                    <h2>{editingTransaction ? "Edit transaction" : "Add transaction"}</h2>
+                </div>
+                <p className="panel__copy">
+                    Keep categories short and consistent. That makes the dashboard easier to read later.
+                </p>
+            </div>
+
             <form className="transaction-form" onSubmit = {handleSubmit}>
-                <input type="number" name="amount" placeholder="Amount" value={formData.amount}
-                onChange={(event)=> handleChange(event)} />
+                <label>
+                    <span>Amount</span>
+                    <input
+                        type="number"
+                        name="amount"
+                        placeholder="1250"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        value={formData.amount}
+                        onChange={handleChange}
+                    />
+                </label>
 
-                <select name="transactionType" value={formData.transactionType} 
-                onChange={(event)=> handleChange(event)}>
-                    <option value="income">Income</option>
-                    <option value="expense">Expense</option>
-                </select>
+                <label>
+                    <span>Type</span>
+                    <select name="transactionType" value={formData.transactionType} onChange={handleChange}>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </label>
 
-                <input type="text" name="category" placeholder="Category" value={formData.category}
-                onChange={(event)=> handleChange(event)} />
+                <label>
+                    <span>Category</span>
+                    <input
+                        type="text"
+                        name="category"
+                        placeholder="Salary, Groceries, Rent"
+                        required
+                        value={formData.category}
+                        onChange={handleChange}
+                    />
+                </label>
 
-                <input type="text" name="description" placeholder="Description" value={formData.description}
-                onChange={(event)=> handleChange(event)} />
+                <label>
+                    <span>Description</span>
+                    <input
+                        type="text"
+                        name="description"
+                        placeholder="Short note about the transaction"
+                        required
+                        value={formData.description}
+                        onChange={handleChange}
+                    />
+                </label>
 
-                <input type="date" name="date" value={formData.date}
-                onChange={(event)=> handleChange(event)} />
+                <label>
+                    <span>Date</span>
+                    <input
+                        type="date"
+                        name="date"
+                        value={formData.date}
+                        onChange={handleChange}
+                    />
+                </label>
 
-                <button type="submit">Add Transaction</button>
+                <div className="transaction-form__actions">
+                    <button type="submit" className="button button--primary" disabled={isSubmitting}>
+                        {isSubmitting
+                            ? "Saving..."
+                            : editingTransaction
+                                ? "Update transaction"
+                                : "Save transaction"}
+                    </button>
+
+                    {editingTransaction && (
+                        <button type="button" className="button button--ghost" onClick={onCancelEdit}>
+                            Cancel edit
+                        </button>
+                    )}
+                </div>
             </form>
-        </div>
+        </section>
     );
 }
 
