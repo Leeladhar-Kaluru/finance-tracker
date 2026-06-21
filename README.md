@@ -1,6 +1,7 @@
 # Finance Tracker
 
 A full-stack Finance Tracker web app built with the MERN stack to help users record income and expenses, view summaries, and analyze monthly spending patterns.
+(No authentication right now , will be added later)
 
 ## Live Demo
 Frontend: https://finance-tracker-gamma-blond.vercel.app/
